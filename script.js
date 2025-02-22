@@ -1,25 +1,31 @@
 const API_URL = "https://crudbackend-bay.vercel.app/api/users";
 
-// Fetch all users and display them
 async function fetchUsers() {
-    const response = await fetch(API_URL);
-    const users = await response.json();
+    try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        
+        const users = await response.json();
+        
+        const userTable = document.getElementById("userTable");
+        userTable.innerHTML = "";
 
-    const userTable = document.getElementById("userTable");
-    userTable.innerHTML = "";
+        users.forEach(user => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td><input type="text" value="${user.name}" id="name-${user.id}"></td>
+                <td><input type="email" value="${user.email}" id="email-${user.id}"></td>
+                <td>
+                    <button onclick="updateUser('${user.id}')">Update</button>
+                    <button onclick="deleteUser('${user.id}')">Delete</button>
+                </td>
+            `;
+            userTable.appendChild(row);
+        });
 
-    users.forEach(user => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td><input type="text" value="${user.name}" id="name-${user.id}"></td>
-            <td><input type="email" value="${user.email}" id="email-${user.id}"></td>
-            <td>
-                <button onclick="updateUser('${user.id}')">Update</button>
-                <button onclick="deleteUser('${user.id}')">Delete</button>
-            </td>
-        `;
-        userTable.appendChild(row);
-    });
+    } catch (error) {
+        console.error("Error fetching users:", error);
+    }
 }
 
 // Add a new user
