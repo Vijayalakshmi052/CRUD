@@ -1,0 +1,52 @@
+[
+  {
+    "id": "c8ec1f83-c40b-4cff-85b8-0935f6141fa7",
+    "name": "Jane Dan",
+    "email": "jane@example.com"
+  },
+  {
+    "id": "276099d7-3090-45c0-896f-0a7021780442",
+    "name": "Vijaya Lakshmi",
+    "email": "vijaya@gmail.com"
+  },
+  {
+    "id": "5c9f92a2-9854-447d-b013-05c4509b15e3",
+    "name": "Shirin Abraham",
+    "email": "shirin@gmail.com"
+  },
+  {
+    "id": "4b9e444d-ac2c-457b-ad2f-8f532ceebbd4",
+    "name": "Eshwar Reddy",
+    "email": "eshwar@gmail.com"
+  },
+  {
+    "id": "114314c9-f0a2-486c-8cfb-b84850e7478a",
+    "name": "Pradeep Krishna",
+    "email": "pradeep@gmail.com"
+  },
+  {
+    "id": "0837570c-1bf1-4e78-9baf-98663e5bf8dd",
+    "name": "Hari Priya",
+    "email": "hari@gmail.com"
+  },
+  {
+    "id": "d8281acf-8510-4330-8321-b25073f9a789",
+    "name": "Steffi Patric",
+    "email": "steffi@gmail.com"
+  },
+  {
+    "id": "e35a3cd9-fdd9-4a2b-9d22-f00c3c992ec3",
+    "name": "Pathuru Jahnavi",
+    "email": "jahnavi@gmail.com"
+  },
+  {
+    "id": "b3f2ad38-7b86-4bc6-817a-0a765339fa72",
+    "name": "Deeksha Gowda",
+    "email": "deeksha@gmail.com"
+  },
+  {
+    "id": "4a312afe-74ee-47a1-bb99-8de80ea8b66e",
+    "name": "John Doe",
+    "email": "john@example.com"
+  }
+]
