@@ -1,4 +1,4 @@
-const API_URL = "http://crudbackend-bay.vercel.app/api/users";
+const API_URL = "https://crudbackend-bay.vercel.app/api/users";
 
 // Fetch all users and display them
 async function fetchUsers() {
