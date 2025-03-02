@@ -1,112 +1,169 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const fs = require("fs");
-const path = require("path");
+const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
 
 const app = express();
-app.use(cors());
 app.use(express.json());
 
-// Serve static files
-app.use(express.static("public"));
-
-const FILE_PATH = "users.json";
-
-// Function to read users from file
-const readUsers = () => {
-    if (!fs.existsSync(FILE_PATH)) {
-        fs.writeFileSync(FILE_PATH, JSON.stringify([])); // Initialize file if not exists
-    }
-    return JSON.parse(fs.readFileSync(FILE_PATH, "utf-8"));
+// Configure CORS
+const corsOptions = {
+    origin: ["https://crudbackend-bay.vercel.app"], // Your frontend URL
+    methods: "GET,POST,PUT,DELETE",
+    allowedHeaders: "Content-Type"
 };
+app.use(cors(corsOptions));
 
-// Function to write users to file
-const writeUsers = (users) => {
-    fs.writeFileSync(FILE_PATH, JSON.stringify(users, null, 2));
-};
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log("Connected to MongoDB"))
+    .catch(err => console.error("MongoDB connection error:", err));
 
-// Serve index.html on /
+// Define User Schema & Model
+const userSchema = new mongoose.Schema({
+    id: { type: String, default: uuidv4 },
+    name: String,
+    email: String
+});
+const User = mongoose.model("User", userSchema);
+
+// Serve User Management UI
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "html", "index.html"));
+    res.send(`
+        <html>
+            <head>
+                <title>CRUD Application</title>
+                <style>
+                    body { font-family: Arial, sans-serif; text-align: center; }
+                    h1 { color: darkblue; }
+                    form { margin: 20px auto; width: 300px; }
+                    input, button { width: 100%; padding: 8px; margin: 5px 0; }
+                    table { width: 50%; margin: 20px auto; border-collapse: collapse; }
+                    th, td { padding: 10px; border: 1px solid black; }
+                    th { background-color: lightblue; }
+                </style>
+            </head>
+            <body>
+                <h1>User Management</h1>
+                <form id="userForm">
+                    <input type="text" id="name" placeholder="Enter name" required>
+                    <input type="email" id="email" placeholder="Enter email" required>
+                    <input type="hidden" id="userId">
+                    <button type="submit" id="submitButton">Add User</button>
+                </form>
+                <h2>Users List</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTable"></tbody>
+                </table>
+                <script>
+                    async function fetchUsers() {
+                        const res = await fetch('/api/users');
+                        const users = await res.json();
+                        const table = document.getElementById('userTable');
+                        table.innerHTML = users.map(user => 
+                            \`<tr>
+                                <td>\${user.name}</td>
+                                <td>\${user.email}</td>
+                                <td>
+                                    <button onclick="editUser('\${user.id}', '\${user.name}', '\${user.email}')">Edit</button>
+                                    <button onclick="deleteUser('\${user.id}')">Delete</button>
+                                </td>
+                            </tr>\`
+                        ).join('');
+                    }
+
+                    document.getElementById('userForm').addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const name = document.getElementById('name').value;
+                        const email = document.getElementById('email').value;
+                        const userId = document.getElementById('userId').value;
+
+                        if (userId) {
+                            // Update user
+                            await fetch(\`/api/users/\${userId}\`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ name, email })
+                            });
+                        } else {
+                            // Add new user
+                            await fetch('/api/users', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ name, email })
+                            });
+                        }
+
+                        document.getElementById('userForm').reset();
+                        document.getElementById('userId').value = '';
+                        document.getElementById('submitButton').innerText = 'Add User';
+                        fetchUsers();
+                    });
+
+                    function editUser(id, name, email) {
+                        document.getElementById('name').value = name;
+                        document.getElementById('email').value = email;
+                        document.getElementById('userId').value = id;
+                        document.getElementById('submitButton').innerText = 'Update User';
+                    }
+
+                    async function deleteUser(id) {
+                        await fetch(\`/api/users/\${id}\`, { method: 'DELETE' });
+                        fetchUsers();
+                    }
+
+                    fetchUsers();
+                </script>
+            </body>
+        </html>
+    `);
 });
 
-// Read (GET) - Get all users
-app.get("/api/users", (req, res) => {
-    const users = readUsers();
+// GET all users
+app.get("/api/users", async (req, res) => {
+    const users = await User.find();
     res.json(users);
 });
 
-// Read (GET) - Get a single user by ID
-app.get("/api/users/:id", (req, res) => {
-    const users = readUsers();
-    const { id } = req.params;
-    const user = users.find((user) => user.id === id);
-
-    if (!user) {
-        return res.status(404).json({ message: "User not found" });
-    }
-    res.json(user);
-});
-
-// Create (POST) - Add a new user
-app.post("/api/users", (req, res) => {
+// POST - Create a new user
+app.post("/api/users", async (req, res) => {
     const { name, email } = req.body;
-    if (!name || !email) {
-        return res.status(400).json({ message: "Name and email are required" });
-    }
+    if (!name || !email) return res.status(400).json({ message: "Name and email are required" });
 
-    const users = readUsers();
-    const newUser = { id: uuidv4(), name, email };
-    users.push(newUser);
-    writeUsers(users);
-
+    const newUser = new User({ name, email });
+    await newUser.save();
     res.status(201).json(newUser);
 });
 
-// Update (PUT) - Update an existing user
-app.put("/api/users/:id", (req, res) => {
-    const { id } = req.params;
+// PUT - Update a user
+app.put("/api/users/:id", async (req, res) => {
     const { name, email } = req.body;
-    let users = readUsers();
-    const userIndex = users.findIndex((user) => user.id === id);
+    const user = await User.findOneAndUpdate(
+        { id: req.params.id },
+        { name, email },
+        { new: true }
+    );
 
-    console.log("Received PUT request for ID:", id);  // Debugging
-    console.log("Existing Users:", users);  // Debugging
-
-    if (userIndex === -1) {
-        console.log("User not found for update.");  // Debugging
-        return res.status(404).json({ message: "User not found" });
-    }
-
-    if (!name || !email) {
-        console.log("Invalid update request: Missing name or email.");  // Debugging
-        return res.status(400).json({ message: "Name and email are required" });
-    }
-
-    users[userIndex] = { id, name, email };
-    writeUsers(users);
-
-    console.log("User updated successfully:", users[userIndex]);  // Debugging
-    res.json(users[userIndex]);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
 });
 
-// Delete (DELETE) - Remove a user
-app.delete("/api/users/:id", (req, res) => {
-    let users = readUsers();
-    const { id } = req.params;
-    const userExists = users.some((user) => user.id === id);
+// DELETE - Remove a user
+app.delete("/api/users/:id", async (req, res) => {
+    const user = await User.findOneAndDelete({ id: req.params.id });
 
-    if (!userExists) {
-        return res.status(404).json({ message: "User not found" });
-    }
-
-    users = users.filter((user) => user.id !== id);
-    writeUsers(users);
-
-    res.json({ message: "User deleted" });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ message: "User deleted successfully" });
 });
 
-// Start server
-const PORT = 4000;
+// Start the Server
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
