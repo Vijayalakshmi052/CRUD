@@ -1,25 +1,31 @@
-const API_URL = "http://localhost:4000/api/users";
+const API_URL = "https://crudbackend-bay.vercel.app/api/users";
 
 // Fetch all users and display them
 async function fetchUsers() {
-    const response = await fetch(API_URL);
-    const users = await response.json();
+    try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error("Failed to fetch users");
 
-    const userTable = document.getElementById("userTable");
-    userTable.innerHTML = "";
+        const users = await response.json();
+        const userTable = document.getElementById("userTable");
+        userTable.innerHTML = "";
 
-    users.forEach(user => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td><input type="text" value="${user.name}" id="name-${user.id}"></td>
-            <td><input type="email" value="${user.email}" id="email-${user.id}"></td>
-            <td>
-                <button onclick="updateUser('${user.id}')">Update</button>
-                <button onclick="deleteUser('${user.id}')">Delete</button>
-            </td>
-        `;
-        userTable.appendChild(row);
-    });
+        users.forEach(user => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td><input type="text" value="${user.name}" id="name-${user.id}"></td>
+                <td><input type="email" value="${user.email}" id="email-${user.id}"></td>
+                <td>
+                    <button onclick="updateUser('${user.id}')">Update</button>
+                    <button onclick="deleteUser('${user.id}')">Delete</button>
+                </td>
+            `;
+            userTable.appendChild(row);
+        });
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        alert("Error fetching users. Check console for details.");
+    }
 }
 
 // Add a new user
@@ -32,18 +38,21 @@ async function addUser() {
         return;
     }
 
-    const response = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email })
-    });
+    try {
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, email })
+        });
 
-    if (response.ok) {
+        if (!response.ok) throw new Error("Failed to add user");
+
         fetchUsers();
         document.getElementById("name").value = "";
         document.getElementById("email").value = "";
-    } else {
-        alert("Error adding user!");
+    } catch (error) {
+        console.error("Error adding user:", error);
+        alert("Error adding user. Check console for details.");
     }
 }
 
@@ -52,16 +61,19 @@ async function updateUser(userId) {
     const name = document.getElementById(`name-${userId}`).value;
     const email = document.getElementById(`email-${userId}`).value;
 
-    const response = await fetch(`${API_URL}/${userId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email })
-    });
+    try {
+        const response = await fetch(`${API_URL}/${userId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, email })
+        });
 
-    if (response.ok) {
+        if (!response.ok) throw new Error("Failed to update user");
+
         fetchUsers();
-    } else {
-        alert("Error updating user!");
+    } catch (error) {
+        console.error("Error updating user:", error);
+        alert("Error updating user. Check console for details.");
     }
 }
 
@@ -69,14 +81,17 @@ async function updateUser(userId) {
 async function deleteUser(userId) {
     if (!confirm("Are you sure you want to delete this user?")) return;
 
-    const response = await fetch(`${API_URL}/${userId}`, {
-        method: "DELETE"
-    });
+    try {
+        const response = await fetch(`${API_URL}/${userId}`, {
+            method: "DELETE"
+        });
 
-    if (response.ok) {
+        if (!response.ok) throw new Error("Failed to delete user");
+
         fetchUsers();
-    } else {
-        alert("Error deleting user!");
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        alert("Error deleting user. Check console for details.");
     }
 }
 
